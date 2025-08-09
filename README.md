@@ -53,6 +53,14 @@ const cards = [
   {id: 'recognition', label: 'Recognition', icon: '🏆'},
   // add or remove cards here
 ];
+```
+
+- Each card needs a unique id, a display label, and an icon (emoji or Unicode).
+- Save and reload the page to see changes.
+
+## Example:
+Add ```{ id: 'creativity', label: 'Creativity', icon: '💡' }``` to add a Creativity card.
+
 
 ---
 
