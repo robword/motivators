@@ -23,7 +23,7 @@ A colorful, drag-and-drop tool to rank your motivators for performance reviews, 
 
 ## 💡 How to Use
 
-1. Download or copy the `index.html` file from this repository.  
+1. Download or copy the `motivators.html` file from this repository.  
 2. Open it in your preferred web browser.  
 3. Drag cards from **Available Cards** to **My Motivators**, arranging them from *Most Important* (top) to *Least Important* (bottom).  
 4. Click **Save My Motivators as Image** to download your ranked motivators.  
@@ -45,7 +45,7 @@ A colorful, drag-and-drop tool to rank your motivators for performance reviews, 
 
 ## ⚙️ Customize Available Cards
 
-To change the motivator cards, edit the `cards` array in `index.html`:
+To change the motivator cards, edit the `cards` array in `motivators.html`:
 
 ```js
 const cards = [
