@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Motivators</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+  body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .board {
+    display: flex;
+    gap: 2rem;
+    width: 900px;
+    max-width: 100%;
+  }
+  .column {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 500px;
+  }
+  h2 {
+    text-align: center;
+    margin-bottom: 1rem;
+    color: #333;
+  }
+  .card-list {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  .card {
+    background: white;
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 600;
+    cursor: grab;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+  }
+  .card:active {
+    transform: scale(1.05);
+  }
+  .card-icon {
+    font-size: 1.4rem;
+  }
+  .placeholder {
+    height: 50px;
+    background: rgba(255,255,255,0.6);
+    border: 2px dashed #aaa;
+    border-radius: 8px;
+  }
+  .instructions {
+    margin-top: 2rem;
+    max-width: 900px;
+    background: rgba(255,255,255,0.5);
+    padding: 1.2rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #333;
+  }
+  .save-btn {
+    margin-top: 1rem;
+    background-color: #ff7e5f;
+    color: white;
+    border: none;
+    padding: 0.8rem 1.4rem;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    transition: background-color 0.2s ease;
+  }
+  .save-btn:hover {
+    background-color: #eb6750;
+  }
+</style>
+</head>
+<body>
+  <div class="board">
+    <div class="column">
+      <h2>Available Cards</h2>
+      <div class="card-list" id="available"></div>
+    </div>
+    <div class="column" id="motivators-column">
+      <h2>My Motivators</h2>
+      <div class="card-list" id="motivators"></div>
+    </div>
+  </div>
+
+  <button class="save-btn" id="saveImageBtn">Save My Motivators as Image</button>
+
+  <div class="instructions">
+    Use these cards to have a discussion about what motivates you. To start, drag the Available cards to the My Motivators column, placing them in order of <strong>Most Important</strong> to <strong>Least Important</strong>. 
+    Once you have ordered your cards, save a screenshot of the order they are in. 
+    There can be many definitions for the various motivators, so it's important to explain what each means to you.
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+const cards = [
+  {id: 'autonomy', label: 'Autonomy', icon: '🦅'},
+  {id: 'recognition', label: 'Recognition', icon: '🏆'},
+  {id: 'growth', label: 'Growth', icon: '🌱'},
+  {id: 'purpose', label: 'Purpose', icon: '🎯'},
+  {id: 'flexibility', label: 'Flexibility', icon: '🤸‍♂️'},
+  {id: 'security', label: 'Security', icon: '🛡️'},
+  {id: 'belonging', label: 'Belonging', icon: '🤝'},
+  {id: 'compensation', label: 'Compensation', icon: '💰'}
+];
+
+const available = document.getElementById('available');
+const motivators = document.getElementById('motivators');
+
+function createCard({id, label, icon}) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.draggable = true;
+  card.id = id;
+  card.innerHTML = `<div class="card-icon">${icon}</div>${label}`;
+  card.addEventListener('dragstart', dragStart);
+  card.addEventListener('dragend', dragEnd);
+  return card;
+}
+
+cards.forEach(c => available.appendChild(createCard(c)));
+
+let dragged = null;
+let placeholder = document.createElement('div');
+placeholder.className = 'placeholder';
+
+function dragStart(e) {
+  dragged = this;
+  this.classList.add('dragging');
+  setTimeout(() => this.style.display = 'none', 0);
+}
+function dragEnd() {
+  this.classList.remove('dragging');
+  this.style.display = 'flex';
+  placeholder.remove();
+}
+
+function dragOverList(e) {
+  e.preventDefault();
+  const container = this;
+  if (container.id === 'motivators' || container.id === 'available') {
+    const afterElement = getDragAfterElement(container, e.clientY);
+    if (afterElement == null) {
+      container.appendChild(placeholder);
+    } else {
+      container.insertBefore(placeholder, afterElement);
+    }
+  }
+}
+
+function dropList(e) {
+  e.preventDefault();
+  if (placeholder.parentNode === this) {
+    this.insertBefore(dragged, placeholder);
+  } else {
+    this.appendChild(dragged);
+  }
+  placeholder.remove();
+}
+
+function getDragAfterElement(container, y) {
+  const draggableElements = [...container.querySelectorAll('.card:not(.dragging)')];
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+[available, motivators].forEach(list => {
+  list.addEventListener('dragover', dragOverList);
+  list.addEventListener('drop', dropList);
+});
+
+document.getElementById('saveImageBtn').addEventListener('click', () => {
+  const column = document.getElementById('motivators-column');
+  html2canvas(column, { backgroundColor: null }).then(canvas => {
+    const link = document.createElement('a');
+    link.download = 'my-motivators.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+});
+</script>
+</body>
+</html>
