@@ -43,6 +43,19 @@ A colorful, drag-and-drop tool to rank your motivators for performance reviews, 
 
 ---
 
+## ⚙️ Customize Available Cards
+
+To change the motivator cards, edit the `cards` array in `index.html`:
+
+```js
+const cards = [
+  {id: 'autonomy', label: 'Autonomy', icon: '🦅'},
+  {id: 'recognition', label: 'Recognition', icon: '🏆'},
+  // add or remove cards here
+];
+
+---
+
 ## 📦 Dependencies
 
 - [html2canvas](https://html2canvas.hertzen.com/) — for saving column snapshots as images.
