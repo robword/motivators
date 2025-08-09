@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Motivators</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
@@ -40,6 +40,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
+    touch-action: none; /* Prevent default scrolling during drag */
   }
   .card {
     background: white;
@@ -52,9 +53,12 @@
     cursor: grab;
     box-shadow: 0 3px 6px rgba(0,0,0,0.1);
     transition: transform 0.2s;
+    user-select: none; /* prevent text selection during drag */
+    touch-action: none; /* important for pointer events */
   }
   .card:active {
     transform: scale(1.05);
+    cursor: grabbing;
   }
   .card-icon {
     font-size: 1.4rem;
@@ -89,6 +93,14 @@
   }
   .save-btn:hover {
     background-color: #eb6750;
+  }
+
+  /* Responsive: stack columns on small screens */
+  @media (max-width: 650px) {
+    .board {
+      flex-direction: column;
+      width: 100%;
+    }
   }
 </style>
 </head>
@@ -136,6 +148,9 @@ function createCard({id, label, icon}) {
   card.innerHTML = `<div class="card-icon">${icon}</div>${label}`;
   card.addEventListener('dragstart', dragStart);
   card.addEventListener('dragend', dragEnd);
+  
+  // Add pointer events for touch support:
+  card.addEventListener('pointerdown', pointerDown);
   return card;
 }
 
@@ -156,6 +171,7 @@ function dragEnd() {
   placeholder.remove();
 }
 
+// --- Drag and drop for mouse (existing) ---
 function dragOverList(e) {
   e.preventDefault();
   const container = this;
@@ -196,6 +212,98 @@ function getDragAfterElement(container, y) {
   list.addEventListener('dragover', dragOverList);
   list.addEventListener('drop', dropList);
 });
+
+// --- Touch / Pointer Events support for mobile drag-and-drop ---
+
+let pointerDragging = null;
+let pointerPlaceholder = null;
+let pointerCurrentContainer = null;
+
+function pointerDown(e) {
+  e.preventDefault();
+  pointerDragging = this;
+  pointerDragging.classList.add('dragging');
+  pointerDragging.style.position = 'absolute';
+  pointerDragging.style.zIndex = 1000;
+
+  // Fix: set dragged card width to container width minus padding to avoid shrinking
+  const parentStyles = window.getComputedStyle(pointerDragging.parentNode);
+  const parentPaddingLeft = parseFloat(parentStyles.paddingLeft);
+  const parentPaddingRight = parseFloat(parentStyles.paddingRight);
+  const targetWidth = pointerDragging.parentNode.clientWidth - parentPaddingLeft - parentPaddingRight;
+  pointerDragging.style.width = targetWidth + 'px';
+
+  pointerDragging.style.pointerEvents = 'none'; // ignore pointer events while dragging
+
+  moveAt(e.pageX, e.pageY);
+
+  function moveAt(pageX, pageY) {
+    pointerDragging.style.left = pageX - pointerDragging.offsetWidth / 2 + 'px';
+    pointerDragging.style.top = pageY - pointerDragging.offsetHeight / 2 + 'px';
+  }
+
+  function onPointerMove(event) {
+    moveAt(event.pageX, event.pageY);
+
+    // Detect container and insertion point
+    const elementsAtPoint = document.elementsFromPoint(event.clientX, event.clientY);
+    const lists = [available, motivators];
+    let foundContainer = null;
+    for (const el of elementsAtPoint) {
+      if (lists.includes(el)) {
+        foundContainer = el;
+        break;
+      }
+    }
+
+    if (foundContainer && foundContainer !== pointerCurrentContainer) {
+      if (pointerPlaceholder && pointerPlaceholder.parentNode) pointerPlaceholder.remove();
+      pointerPlaceholder = document.createElement('div');
+      pointerPlaceholder.className = 'placeholder';
+      pointerCurrentContainer = foundContainer;
+      foundContainer.appendChild(pointerPlaceholder);
+    }
+
+    if (foundContainer) {
+      // Find element to insert before
+      const afterElement = getDragAfterElement(foundContainer, event.clientY);
+      if (afterElement && pointerPlaceholder.parentNode === foundContainer) {
+        foundContainer.insertBefore(pointerPlaceholder, afterElement);
+      } else if (pointerPlaceholder.parentNode !== foundContainer) {
+        if (pointerPlaceholder.parentNode) pointerPlaceholder.remove();
+        foundContainer.appendChild(pointerPlaceholder);
+      }
+    } else {
+      if (pointerPlaceholder && pointerPlaceholder.parentNode) pointerPlaceholder.remove();
+      pointerCurrentContainer = null;
+    }
+  }
+
+  function onPointerUp(event) {
+    document.removeEventListener('pointermove', onPointerMove);
+    document.removeEventListener('pointerup', onPointerUp);
+
+    pointerDragging.classList.remove('dragging');
+    pointerDragging.style.position = '';
+    pointerDragging.style.zIndex = '';
+    pointerDragging.style.left = '';
+    pointerDragging.style.top = '';
+    pointerDragging.style.width = '';
+    pointerDragging.style.pointerEvents = '';
+
+    if (pointerPlaceholder && pointerPlaceholder.parentNode) {
+      pointerPlaceholder.parentNode.insertBefore(pointerDragging, pointerPlaceholder);
+      pointerPlaceholder.remove();
+    }
+
+    pointerDragging = null;
+    pointerPlaceholder = null;
+    pointerCurrentContainer = null;
+  }
+
+  document.addEventListener('pointermove', onPointerMove);
+  document.addEventListener('pointerup', onPointerUp);
+}
 
 document.getElementById('saveImageBtn').addEventListener('click', () => {
   const column = document.getElementById('motivators-column');
